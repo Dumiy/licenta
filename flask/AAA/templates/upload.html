@@ -1,0 +1,37 @@
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>{% block title %} Upload Image {% endblock %}</title>
+</head>
+
+
+{% block main %}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h1>Upload video</h1>
+            <hr>
+
+            <form action="/upload-data" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label> Select video</label>
+                    <div class ="custom-file">
+                        <input oninput="filesize(this);" type="file" class="custom-file-input" name="video" id="video">
+                        <label class="custom-file-label" for="video">Select file...</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+
+    function filesize(elem){
+      document.cookie = `filesize=${elem.files[0].size}`
+    }
+  
+  </script>
+{% endblock %}

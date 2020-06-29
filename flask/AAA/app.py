@@ -12,7 +12,7 @@ UPLOAD_FOLDER = './/upload'
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
-app.config['UPLOAD_FOLDER'] = "static/files"
+app.config['UPLOAD_FOLDER'] = "static\\files"
 
 
 def allowed_image_filesize(filesize):
@@ -58,4 +58,4 @@ if __name__ == "__main__":
         port = int(sys.argv[1])
     except Exception as e:
         port = 5500
-    app.run(host="0.0.0.0",port=port,debug=True)
+    app.run(port=port,debug=True)
