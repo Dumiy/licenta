@@ -13,6 +13,5 @@ RUN pip install -r /licenta/flask/requirements.txt -f https://download.pytorch.o
 RUN cd licenta/flask
 RUN mkdir /licenta/flask/static
 RUN mkdir /licenta/flask/static/files
-RUN python /licenta/flask/app.py
 EXPOSE 5500
 
