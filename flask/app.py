@@ -5,14 +5,15 @@ import os
 import numpy as np
 import cv2
 import os
-from camera import VideoCamera
 import matplotlib.pyplot as plt
 import extract
-from pytorch_i3d import InceptionI3d
+from pytorch_i3d import InceptionI3d,InceptionI3d_CBAM
 from torchvision import transforms
 from PIL import Image
 import torch
 from torch.autograd import Variable
+from collections import Counter
+from cv2 import VideoWriter, VideoWriter_fourcc
 
 UPLOAD_FOLDER = './/upload'
 
@@ -55,18 +56,23 @@ def predict(rgb,flow,cuda=True):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     i3d_rgb = InceptionI3d(400,in_channels=3)
     i3d_flow = InceptionI3d(400,in_channels=2)
+    i3d_cbam = InceptionI3d(14,in_channels=3)
+    i3d_class = InceptionI3d_CBAM(i3d_cbam)
+    i3d_class.load_state_dict(torch.load("static/models/class_final.pt"))
     i3d_rgb.load_state_dict(torch.load("static/models/rgb_imagenet.pt"))
     i3d_flow.load_state_dict(torch.load("static/models/flow_imagenet.pt"))
     #i3d_rgb.replace_logits(157)
     #i3d_flow.replace_logits(157)
     i3d_flow.to(device)
     i3d_rgb.to(device)
+    i3d_class.to(device)
     data_rgb = rgb.permute(0, 2, 1, 3, 4)
     data_flow = flow.permute(0, 2, 1, 3, 4)
     data_rgb = Variable(data_rgb.to(device), requires_grad = False)
     data_flow = Variable(data_flow.to(device), requires_grad = False)
     rgb_feature = []
     flow_feature = []
+    labels = []
     result = []
     for (x,y) in zip(data_rgb,data_flow):
         with torch.no_grad():
@@ -75,14 +81,26 @@ def predict(rgb,flow,cuda=True):
             rgb_feature = rgb_feature.squeeze(3).squeeze(3).squeeze(2)
             flow_feature = i3d_flow.extract_features(y)
             flow_feature = flow_feature.squeeze(3).squeeze(3).squeeze(2)
+            label = torch.argmax(i3d_class(x),dim=1)
+            labels.append(label)
             result.append(torch.cat((rgb_feature,flow_feature),dim=1))
     result = torch.stack(result)
-    return result.squeeze(1)
+    return result.squeeze(1),labels
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def find_majority(k):
+    myMap = {}
+    maximum = ( '', 0 ) # (occurring element, occurrences)
+    for n in k:
+        if n in myMap: myMap[n] += 1
+        else: myMap[n] = 1
 
+        # Keep track of maximum on the go
+        if myMap[n] > maximum[1]: maximum = (n,myMap[n])
+
+    return maximum
 @app.route('/upload-data',methods=["GET",'POST'])
 def upload():
     if request.method == "POST":
@@ -98,7 +116,27 @@ def upload():
             if file and allowed_file(file.filename):
                 file.save(os.path.join(app.config["UPLOAD_FOLDER"],secure_filename(file.filename)))
                 print("File saved")
-                output = extract.extract_frames("static/files/"+file.filename)
+                if ".npy" in file.filename:
+                    output = np.array([np.load("static/files/"+file.filename)])
+                    temp = output
+                else:
+                    output = extract.extract_frames("static/files/"+file.filename)
+                dictionar = {
+                0 : 'Abuse',
+                1 : 'Arrest',
+                2 : 'Arson',
+                3 : 'Assault',
+                4 : 'Burglary',
+                5 : 'Explosion',
+                6 : 'Fighting',
+                7 : 'Normal',
+                8 : 'RoadAccidents',
+                9 : 'Robbery',
+                10 : 'Shooting',
+                11 : 'Shoplifting',
+                12 : 'Stealing',
+                13 : 'Vandalism'
+                }
                 flow = []
                 test_transforms = transforms.Compose([transforms.CenterCrop(224),])
                 print(output.shape)
@@ -138,7 +176,9 @@ def upload():
                 print(flowe.shape)
                 print(file.filename)
                 print(flowe[:,:,:2].shape)
-                final = predict(torch.Tensor(outputs),torch.Tensor(flowe[:,:,:2]))
+                final,labels = predict(torch.Tensor(outputs),torch.Tensor(flowe[:,:,:2]))
+                c = find_majority(labels)
+                valoare= c[0]
                 print(final.shape)
                 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
                 clasifier = extract.Classifier()
@@ -169,7 +209,23 @@ def upload():
                 plt.legend()
                 plt.savefig('static/normal.png')
                 plt.clf()
-                return render_template("view.html",video_feed="static/files/"+file.filename,predict=np.mean(anomaly),name="Abuse",graph1 ='static/anomaly.png',graph2='static/normal.png')
+                video_file = file.filename
+                if ".npy" in video_file:
+                    width = 640
+                    height = 480
+                    fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
+                    fps = 30
+                    video = VideoWriter('./static/files/numpy.avi', fourcc,float(6), (temp[0].shape[1], temp[0].shape[2]))
+                    i = 0
+                    for i in range(temp[0].shape[0]):
+                        frame = temp[0][i]
+                        i+=1
+                        video.write(frame)
+                    video.release()
+                    video_file = "numpy.avi"
+                print(valoare.tolist()[0])
+                print(dictionar[valoare.tolist()[0]])
+                return render_template("view.html",video_feed="static/files/"+video_file,predict=np.mean(anomaly),name=dictionar[valoare.tolist()[0]],graph1 ='static/anomaly.png',graph2='static/normal.png')
     return render_template("upload.html")
 with app.test_request_context():
     print(url_for("upload"))
