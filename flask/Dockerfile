@@ -14,5 +14,3 @@ RUN cd licenta/flask
 RUN mkdir /licenta/flask/static
 RUN mkdir /licenta/flask/static/files
 EXPOSE 5500
-ENTRYPOINT [ "python" ]
-CMD [ "app.py"]

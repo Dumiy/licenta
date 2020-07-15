@@ -1,0 +1,25 @@
+<html>
+  <head>
+    <title style="left:50%;">Viewing result</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+  </head>
+  <body>
+    <h1>Video classification</h1>
+    <div class="container-fluid" style="position:absolute;">
+      <div class="row">
+        <div class="col-md-4">
+          <video controls width="640" height="480" autoplay>
+            <source id="bg" src="{{video_feed}}" type="video/mp4">
+          </video>
+        </div>
+        <div class="col-md-2">
+          <b>Prediction : {{predict}} </b>
+          <br>
+          <b>Clasification : {{name}} </b>
+          <img src = "{{ graph1 }}" alt="graf">
+          <img src = "{{ graph2 }}" alt="graf">  
+        </div>
+    </div>
+
+  </body>
+</html>
