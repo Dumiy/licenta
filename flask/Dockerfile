@@ -11,6 +11,4 @@ RUN cd ~
 RUN git clone https://github.com/Dumiy/licenta
 RUN pip install -r /licenta/flask/requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
 RUN cd licenta/flask
-RUN mkdir /licenta/flask/static
-RUN mkdir /licenta/flask/static/files
 EXPOSE 5500
